@@ -36,9 +36,7 @@ Bank/
 │   │   │   │   │       └── MainFrame.java          -- 主功能界面
 │   │   └── resources/
 │   │       └── db.properties                       -- 数据库配置文件
-├── lib/                                            -- 依赖库目录
 ├── create_database.sql                             -- 创建数据库和表的SQL脚本
-├── compile_run.bat                                 -- 编译和运行脚本
 └── README.md                                       -- 项目说明文档
 ```
 
@@ -75,11 +73,7 @@ Bank/
      ```
 
 ## 编译和运行
-1. **使用编译运行脚本**：
-   - 双击运行`compile_run.bat`脚本
-   - 脚本会自动编译项目并运行
-
-2. **手动编译和运行**：
+1. **手动编译和运行**：
    - 编译项目：
      ```
      javac -d target -cp lib/* src/main/java/com/bank/*.java src/main/java/com/bank/entity/*.java src/main/java/com/bank/dao/*.java src/main/java/com/bank/dao/impl/*.java src/main/java/com/bank/service/*.java src/main/java/com/bank/service/impl/*.java src/main/java/com/bank/util/*.java src/main/java/com/bank/view/*.java

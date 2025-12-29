@@ -11,15 +11,26 @@ import java.sql.SQLException;
 import java.util.Properties;
 
 /**
- * 数据库工具类，用于获取和关闭数据库连接
+ * 数据库工具类
+ * 负责管理数据库连接的获取和释放
+ * 使用单例模式加载数据库配置，提供静态方法获取数据库连接
  */
 public class DBUtil {
+    /** JDBC驱动程序类名 */
     private static String driver;
+    /** 数据库连接URL，包含数据库地址、端口、数据库名和连接参数 */
     private static String url;
+    /** 数据库用户名 */
     private static String username;
+    /** 数据库密码 */
     private static String password;
 
-    // 静态代码块，加载配置文件
+    /**
+     * 静态代码块
+     * 在类加载时执行，用于加载数据库配置文件并初始化连接参数
+     * 配置文件加载顺序：类路径resources/db.properties -> 项目目录绝对路径
+     * 提供默认配置作为fallback，确保程序在配置文件缺失时也能运行
+     */
     static {
         Properties properties = new Properties();
         InputStream inputStream = null;
@@ -30,7 +41,7 @@ public class DBUtil {
             
             if (inputStream == null) {
                 System.out.println("从类路径找不到db.properties，尝试从当前目录加载...");
-                // 使用绝对路径
+                // 使用绝对路径加载项目中的配置文件
                 String currentDir = System.getProperty("user.dir");
                 String configPath = currentDir + "\\src\\main\\resources\\db.properties";
                 System.out.println("尝试加载配置文件：" + configPath);
@@ -43,7 +54,7 @@ public class DBUtil {
             username = properties.getProperty("jdbc.username");
             password = properties.getProperty("jdbc.password");
             
-            // 验证必需的配置项
+            // 验证必需的配置项，如果为空则使用默认值
             if (driver == null || driver.trim().isEmpty()) {
                 driver = "com.mysql.cj.jdbc.Driver";
             }
@@ -63,14 +74,15 @@ public class DBUtil {
             System.out.println("username: " + username);
             System.out.println("password: " + "*".repeat(password.length()));
             
-            // 加载数据库驱动
+            // 加载数据库驱动类
             Class.forName(driver);
             System.out.println("数据库驱动加载成功：" + driver);
             
         } catch (IOException e) {
+            // 配置文件加载失败，使用默认配置
             System.out.println("数据库配置加载失败，使用默认配置：" + e.getMessage());
             e.printStackTrace();
-            // 提供默认配置，避免类初始化失败
+            // 提供默认配置，避免类初始化失败导致程序无法启动
             driver = "com.mysql.cj.jdbc.Driver";
             url = "jdbc:mysql://localhost:3306/bank_system?useSSL=false&serverTimezone=UTC&characterEncoding=utf8";
             username = "root";
@@ -84,9 +96,10 @@ public class DBUtil {
                 ex.printStackTrace();
             }
         } catch (ClassNotFoundException e) {
+            // 驱动类加载失败
             System.out.println("数据库驱动加载失败：" + e.getMessage());
             e.printStackTrace();
-            // 不抛出异常，使用默认驱动类名
+            // 不抛出异常，使用默认驱动类名尝试重新加载
             driver = "com.mysql.cj.jdbc.Driver";
             try {
                 Class.forName(driver);
@@ -95,6 +108,7 @@ public class DBUtil {
                 ex.printStackTrace();
             }
         } finally {
+            // 确保输入流被关闭
             if (inputStream != null) {
                 try {
                     inputStream.close();
@@ -107,7 +121,8 @@ public class DBUtil {
     
     /**
      * 获取数据库连接
-     * @return Connection对象，如果连接失败返回null
+     * 根据配置文件中的参数建立与MySQL数据库的连接
+     * @return Connection 返回数据库连接对象，连接失败返回null
      */
     public static Connection getConnection() {
         Connection conn = null;
@@ -118,12 +133,13 @@ public class DBUtil {
             System.out.println("连接URL：" + url);
             System.out.println("连接用户：" + username);
         } catch (SQLException e) {
+            // 连接失败，打印详细错误信息
             System.out.println("数据库连接失败！");
             System.out.println("错误信息：" + e.getMessage());
             System.out.println("SQL状态：" + e.getSQLState());
             System.out.println("错误代码：" + e.getErrorCode());
             
-            // 提供具体的连接问题诊断
+            // 提供具体的连接问题诊断信息
             if (e.getErrorCode() == 1049) {
                 System.out.println("诊断：数据库 'bank_system' 不存在，请先创建数据库");
             } else if (e.getErrorCode() == 1045) {
@@ -137,17 +153,19 @@ public class DBUtil {
                 System.out.println("3. 防火墙是否阻止了连接");
             }
             
-            // 不抛出异常，返回null，由调用者处理
+            // 不抛出异常，返回null，由调用者决定如何处理连接失败
             e.printStackTrace();
         }
         return conn;
     }
 
     /**
-     * 关闭数据库资源
-     * @param conn Connection对象
-     * @param pstmt PreparedStatement对象
-     * @param rs ResultSet对象
+     * 关闭所有数据库资源
+     * 依次关闭ResultSet、PreparedStatement和Connection
+     * 注意：关闭顺序很重要，应该先关闭ResultSet，再关闭PreparedStatement，最后关闭Connection
+     * @param conn Connection数据库连接对象，可以为null
+     * @param pstmt PreparedStatement预编译语句对象，可以为null
+     * @param rs ResultSet结果集对象，可以为null
      */
     public static void close(Connection conn, PreparedStatement pstmt, ResultSet rs) {
         try {
@@ -167,8 +185,9 @@ public class DBUtil {
 
     /**
      * 关闭数据库资源（无ResultSet）
-     * @param conn Connection对象
-     * @param pstmt PreparedStatement对象
+     * 重载方法，用于不需要关闭ResultSet的场景
+     * @param conn Connection数据库连接对象，可以为null
+     * @param pstmt PreparedStatement预编译语句对象，可以为null
      */
     public static void close(Connection conn, PreparedStatement pstmt) {
         close(conn, pstmt, null);

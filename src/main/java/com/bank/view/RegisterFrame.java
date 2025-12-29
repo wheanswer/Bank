@@ -3,100 +3,435 @@ package com.bank.view;
 import com.bank.entity.User;
 import com.bank.service.UserService;
 import com.bank.service.impl.UserServiceImpl;
+
 import javax.swing.*;
+import javax.swing.border.Border;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.math.BigDecimal;
 
 /**
- * 注册界面
+ * 注册界面类
+ * 提供用户注册功能，包括姓名、账号、密码、手机号和身份证号的输入与验证
+ * 继承自JFrame，创建银行管理系统的用户注册窗口
  */
 public class RegisterFrame extends JFrame {
-    // 服务层对象
+    /** 用户服务层对象，用于处理用户相关的业务逻辑 */
     private UserService userService = new UserServiceImpl();
     
-    // 组件
+    /** 姓名输入文本框 */
     private JTextField nameField;
+    /** 账号输入文本框 */
     private JTextField accountField;
+    /** 密码输入框 */
     private JPasswordField passwordField;
+    /** 确认密码输入框 */
     private JPasswordField confirmPasswordField;
+    /** 手机号输入文本框 */
     private JTextField phoneField;
+    /** 身份证号输入文本框 */
     private JTextField idCardField;
+    /** 生成账号按钮 */
     private JButton generateAccountBtn;
+    /** 注册按钮 */
     private JButton registerBtn;
+    /** 取消按钮 */
     private JButton cancelBtn;
 
+    /**
+     * 构造函数
+     * 初始化注册窗口，设置窗口属性，创建并显示UI组件
+     */
     public RegisterFrame() {
-        // 设置窗口标题
-        setTitle("银行管理系统 - 注册");
-        // 设置窗口大小
-        setSize(450, 350);
-        // 设置窗口居中
+        setTitle("银行管理系统 - 用户注册");
+        setSize(520, 700);
         setLocationRelativeTo(null);
-        // 设置窗口关闭方式
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        // 设置窗口不可调整大小
         setResizable(false);
         
-        // 初始化组件
+        setupUITheme();
+        
         initComponents();
-        // 添加组件到窗口
         addComponents();
-        // 添加事件监听器
         addListeners();
         
-        // 显示窗口
         setVisible(true);
     }
 
-    // 初始化组件
-    private void initComponents() {
-        nameField = new JTextField(15);
-        accountField = new JTextField(15);
-        accountField.setEditable(true); // 账号可以手动编辑
-        passwordField = new JPasswordField(15);
-        confirmPasswordField = new JPasswordField(15);
-        phoneField = new JTextField(15);
-        idCardField = new JTextField(15);
-        generateAccountBtn = new JButton("生成账号");
-        registerBtn = new JButton("注册");
-        cancelBtn = new JButton("取消");
+    /**
+     * 设置UI主题和外观样式
+     * 配置系统Look and Feel，并设置自定义颜色主题
+     */
+    private void setupUITheme() {
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
+        UIManager.put("Panel.background", new Color(245, 247, 250));
+        UIManager.put("TextField.background", Color.WHITE);
+        UIManager.put("Button.background", new Color(70, 130, 180));
+        UIManager.put("Button.foreground", Color.WHITE);
+        UIManager.put("Button.focus", new Color(70, 130, 180));
+        UIManager.put("Button.border", new LineBorder(new Color(70, 130, 180), 1));
     }
 
-    // 添加组件到窗口
-    private void addComponents() {
-        // 创建面板
-        JPanel panel = new JPanel();
-        // 设置网格布局，8行2列，行间距10，列间距10
-        panel.setLayout(new GridLayout(8, 2, 10, 10));
-        panel.setBorder(BorderFactory.createEmptyBorder(20, 50, 20, 50));
+    /**
+     * 初始化所有UI组件
+     * 创建姓名、账号、密码、确认密码、手机号、身份证号输入框
+     * 创建生成账号、注册、取消按钮
+     */
+    private void initComponents() {
+        nameField = createStyledTextField("请输入真实姓名");
+        accountField = createStyledTextField("请输入账号或点击生成");
+        accountField.setEditable(true);
+        passwordField = createStyledPasswordField("请输入密码");
+        confirmPasswordField = createStyledPasswordField("请再次输入密码");
+        phoneField = createStyledTextField("请输入11位手机号");
+        idCardField = createStyledTextField("请输入18位身份证号");
         
-        // 添加组件到面板
-        panel.add(new JLabel("姓名："));
-        panel.add(nameField);
-        panel.add(new JLabel("账号："));
-        panel.add(accountField);
-        panel.add(new JLabel()); // 空标签，用于占位
-        panel.add(generateAccountBtn);
-        panel.add(new JLabel("密码："));
-        panel.add(passwordField);
-        panel.add(new JLabel("确认密码："));
-        panel.add(confirmPasswordField);
-        panel.add(new JLabel("手机号："));
-        panel.add(phoneField);
-        panel.add(new JLabel("身份证号："));
-        panel.add(idCardField);
+        generateAccountBtn = createStyledButton("🎯 生成账号", new Color(0, 191, 255));
+        registerBtn = createStyledButton("✅ 注册账户", new Color(50, 205, 50));
+        cancelBtn = createStyledButton("❌ 取消", new Color(255, 69, 0));
+    }
+
+    /**
+     * 创建样式化的文本输入框
+     * 设置字体、边框、背景色，并添加焦点监听器实现边框高亮效果
+     * @param placeholder 占位符文本
+     * @return 样式化的JTextField组件
+     */
+    private JTextField createStyledTextField(String placeholder) {
+        JTextField field = new JTextField(15);
+        field.setFont(new Font("微软雅黑", Font.PLAIN, 13));
+        field.setBorder(BorderFactory.createCompoundBorder(
+            new LineBorder(new Color(200, 200, 200), 1),
+            new EmptyBorder(8, 12, 8, 12)
+        ));
+        field.setBackground(Color.WHITE);
+        
+        field.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                field.setBorder(BorderFactory.createCompoundBorder(
+                    new LineBorder(new Color(70, 130, 180), 2),
+                    new EmptyBorder(7, 11, 7, 11)
+                ));
+            }
+            
+            @Override
+            public void focusLost(FocusEvent e) {
+                field.setBorder(BorderFactory.createCompoundBorder(
+                    new LineBorder(new Color(200, 200, 200), 1),
+                    new EmptyBorder(8, 12, 8, 12)
+                ));
+            }
+        });
+        
+        return field;
+    }
+
+    /**
+     * 创建样式化的密码输入框
+     * 设置字体、边框、背景色，并添加焦点监听器实现边框高亮效果
+     * @param placeholder 占位符文本
+     * @return 样式化的JPasswordField组件
+     */
+    private JPasswordField createStyledPasswordField(String placeholder) {
+        JPasswordField field = new JPasswordField(15);
+        field.setFont(new Font("微软雅黑", Font.PLAIN, 13));
+        field.setBorder(BorderFactory.createCompoundBorder(
+            new LineBorder(new Color(200, 200, 200), 1),
+            new EmptyBorder(8, 12, 8, 12)
+        ));
+        field.setBackground(Color.WHITE);
+        
+        field.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                field.setBorder(BorderFactory.createCompoundBorder(
+                    new LineBorder(new Color(70, 130, 180), 2),
+                    new EmptyBorder(7, 11, 7, 11)
+                ));
+            }
+            
+            @Override
+            public void focusLost(FocusEvent e) {
+                field.setBorder(BorderFactory.createCompoundBorder(
+                    new LineBorder(new Color(200, 200, 200), 1),
+                    new EmptyBorder(8, 12, 8, 12)
+                ));
+            }
+        });
+        
+        return field;
+    }
+
+    /**
+     * 创建样式化的按钮
+     * 设置按钮的字体、背景色、边框、焦点边框等样式
+     * 添加鼠标悬停效果，鼠标进入时背景变浅，离开时恢复原色
+     * @param text 按钮显示的文本
+     * @param bgColor 按钮背景颜色
+     * @return 样式化的JButton组件
+     */
+    private JButton createStyledButton(String text, Color bgColor) {
+        JButton button = new JButton(text);
+        button.setFont(new Font("微软雅黑", Font.BOLD, 13));
+        
+        button.setUI(new javax.swing.plaf.basic.BasicButtonUI());
+        
+        button.setBackground(bgColor);
+        button.setForeground(Color.WHITE);
+        button.setBorder(new LineBorder(bgColor.darker(), 2));
+        button.setFocusPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setPreferredSize(new Dimension(120, 38));
+        
+        button.setContentAreaFilled(false);
+        button.setOpaque(true);
+        button.setBorderPainted(true);
+        
+        Color originalBg = bgColor;
+        Border originalBorder = button.getBorder();
+        
+        Color lighterBg = new Color(
+            Math.min(255, bgColor.getRed() + 40),
+            Math.min(255, bgColor.getGreen() + 40),
+            Math.min(255, bgColor.getBlue() + 40)
+        );
+        
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                button.setBackground(lighterBg);
+                button.setBorder(new LineBorder(lighterBg, 2));
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                button.setBackground(originalBg);
+                button.setBorder(originalBorder);
+            }
+        });
+        
+        return button;
+    }
+
+    /**
+     * 将所有UI组件添加到窗口中
+     * 创建主面板、标题面板、表单面板和按钮面板，并按BorderLayout布局添加
+     */
+    private void addComponents() {
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBackground(new Color(245, 247, 250));
+        
+        JPanel titlePanel = createTitlePanel();
+        mainPanel.add(titlePanel, BorderLayout.NORTH);
+        
+        JPanel formPanel = createFormPanel();
+        mainPanel.add(formPanel, BorderLayout.CENTER);
+        
+        JPanel buttonPanel = createButtonPanel();
+        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
+        
+        add(mainPanel);
+    }
+
+    /**
+     * 创建标题面板
+     * 显示银行管理系统标题和用户注册副标题
+     * @return 标题面板JPanel
+     */
+    private JPanel createTitlePanel() {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 20));
+        panel.setBackground(new Color(245, 247, 250));
+        
+        JLabel titleLabel = new JLabel("🏦 银行管理系统");
+        titleLabel.setFont(new Font("微软雅黑", Font.BOLD, 24));
+        titleLabel.setForeground(new Color(25, 118, 210));
+        
+        JLabel subtitleLabel = new JLabel("用户注册");
+        subtitleLabel.setFont(new Font("微软雅黑", Font.PLAIN, 16));
+        subtitleLabel.setForeground(new Color(97, 97, 97));
+        
+        panel.add(titleLabel);
+        panel.add(Box.createVerticalStrut(5));
+        panel.add(subtitleLabel);
+        
+        return panel;
+    }
+
+    /**
+     * 创建注册须知提示面板
+     * 显示用户注册的各项要求和注意事项
+     * @return 注册须知面板JPanel
+     */
+    private JPanel createRegistrationGuidePanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(new Color(240, 248, 255));
+        panel.setBorder(new EmptyBorder(15, 20, 15, 20));
+        
+        JLabel titleLabel = new JLabel("📋 注册须知");
+        titleLabel.setFont(new Font("微软雅黑", Font.BOLD, 14));
+        titleLabel.setForeground(new Color(25, 118, 210));
+        
+        JTextArea guideText = new JTextArea();
+        guideText.setText("请按要求填写以下信息：\n" +
+                         "• 姓名：使用真实姓名\n" +
+                         "• 账号：可手动输入或点击生成\n" +
+                         "• 密码：至少6位字符\n" +
+                         "• 手机号：11位数字，必须以1开头\n" +
+                         "• 身份证号：18位数字，第18位可为X");
+        guideText.setFont(new Font("微软雅黑", Font.PLAIN, 12));
+        guideText.setForeground(new Color(66, 66, 66));
+        guideText.setBackground(new Color(240, 248, 255));
+        guideText.setEditable(false);
+        guideText.setLineWrap(true);
+        guideText.setWrapStyleWord(true);
+        
+        panel.add(titleLabel, BorderLayout.NORTH);
+        panel.add(guideText, BorderLayout.CENTER);
+        
+        return panel;
+    }
+
+    /**
+     * 创建表单面板
+     * 包含所有输入字段的表单，使用BoxLayout垂直排列
+     * @return 表单面板JPanel
+     */
+    private JPanel createFormPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBackground(new Color(245, 247, 250));
+        panel.setBorder(new EmptyBorder(20, 60, 20, 60));
+        
+        panel.add(createRegistrationGuidePanel());
+        panel.add(Box.createVerticalStrut(20));
+        
+        panel.add(createInputRow("姓名", nameField));
+        panel.add(Box.createVerticalStrut(15));
+        panel.add(createInputRow("账号", accountField, generateAccountBtn));
+        panel.add(Box.createVerticalStrut(15));
+        panel.add(createPasswordRow("密码", passwordField));
+        panel.add(Box.createVerticalStrut(15));
+        panel.add(createPasswordRow("确认密码", confirmPasswordField));
+        panel.add(Box.createVerticalStrut(15));
+        panel.add(createInputRow("手机号", phoneField));
+        panel.add(Box.createVerticalStrut(15));
+        panel.add(createInputRow("身份证号", idCardField));
+        
+        return panel;
+    }
+
+    /**
+     * 创建输入行（无按钮）
+     * @param label 标签文本
+     * @param field 输入字段组件
+     * @return 输入行面板JPanel
+     */
+    private JPanel createInputRow(String label, JTextField field) {
+        return createInputRow(label, field, null);
+    }
+
+    /**
+     * 创建输入行（带按钮）
+     * 创建包含标签、输入框和可选按钮的水平布局行
+     * @param label 标签文本
+     * @param field 输入字段组件
+     * @param button 按钮组件（可为null）
+     * @return 输入行面板JPanel
+     */
+    private JPanel createInputRow(String label, JTextField field, JButton button) {
+        JPanel rowPanel = new JPanel(new BorderLayout(10, 0));
+        rowPanel.setBackground(new Color(245, 247, 250));
+        
+        JLabel labelComponent = new JLabel(label + "：");
+        labelComponent.setFont(new Font("微软雅黑", Font.PLAIN, 13));
+        labelComponent.setPreferredSize(new Dimension(80, 35));
+        labelComponent.setHorizontalAlignment(SwingConstants.RIGHT);
+        labelComponent.setForeground(new Color(66, 66, 66));
+        
+        if (button != null) {
+            JPanel fieldPanel = new JPanel(new GridBagLayout());
+            fieldPanel.setBackground(new Color(245, 247, 250));
+            
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.insets = new Insets(0, 0, 0, 5);
+            gbc.fill = GridBagConstraints.HORIZONTAL;
+            gbc.weightx = 1.0;
+            
+            fieldPanel.add(field, gbc);
+            
+            gbc.weightx = 0;
+            gbc.fill = GridBagConstraints.NONE;
+            fieldPanel.add(button, gbc);
+            
+            rowPanel.add(labelComponent, BorderLayout.WEST);
+            rowPanel.add(fieldPanel, BorderLayout.CENTER);
+        } else {
+            JPanel fieldPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+            fieldPanel.setBackground(new Color(245, 247, 250));
+            fieldPanel.add(field);
+            
+            rowPanel.add(labelComponent, BorderLayout.WEST);
+            rowPanel.add(fieldPanel, BorderLayout.CENTER);
+        }
+        
+        return rowPanel;
+    }
+
+    /**
+     * 创建密码输入行
+     * 创建包含标签和密码输入框的水平布局行
+     * @param label 标签文本
+     * @param field 密码输入框组件
+     * @return 密码输入行面板JPanel
+     */
+    private JPanel createPasswordRow(String label, JPasswordField field) {
+        JPanel rowPanel = new JPanel(new BorderLayout(10, 0));
+        rowPanel.setBackground(new Color(245, 247, 250));
+        
+        JLabel labelComponent = new JLabel(label + "：");
+        labelComponent.setFont(new Font("微软雅黑", Font.PLAIN, 13));
+        labelComponent.setPreferredSize(new Dimension(80, 35));
+        labelComponent.setHorizontalAlignment(SwingConstants.RIGHT);
+        labelComponent.setForeground(new Color(66, 66, 66));
+        
+        JPanel fieldPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        fieldPanel.setBackground(new Color(245, 247, 250));
+        fieldPanel.add(field);
+        
+        rowPanel.add(labelComponent, BorderLayout.WEST);
+        rowPanel.add(fieldPanel, BorderLayout.CENTER);
+        
+        return rowPanel;
+    }
+
+    /**
+     * 创建按钮面板
+     * 包含注册按钮和取消按钮，居中对齐
+     * @return 按钮面板JPanel
+     */
+    private JPanel createButtonPanel() {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 20));
+        panel.setBackground(new Color(245, 247, 250));
+        
         panel.add(registerBtn);
         panel.add(cancelBtn);
         
-        // 添加面板到窗口
-        add(panel);
+        return panel;
     }
 
-    // 添加事件监听器
+    /**
+     * 添加事件监听器
+     * 为生成账号按钮、注册按钮和取消按钮添加点击事件处理
+     */
     private void addListeners() {
-        // 生成账号按钮事件
         generateAccountBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -105,7 +440,6 @@ public class RegisterFrame extends JFrame {
             }
         });
         
-        // 注册按钮事件
         registerBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -113,128 +447,117 @@ public class RegisterFrame extends JFrame {
             }
         });
         
-        // 取消按钮事件
         cancelBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                // 关闭当前窗口
                 dispose();
-                // 打开登录窗口
                 new LoginFrame();
             }
         });
     }
 
-    // 手机号校验
+    /**
+     * 验证手机号格式是否正确
+     * 检查手机号长度、是否全为数字、是否符合中国手机号格式规则
+     * @param phone 待验证的手机号字符串
+     * @return 验证通过返回true，否则返回false
+     */
     private boolean validatePhone(String phone) {
         if (phone == null || phone.length() != 11) {
-            JOptionPane.showMessageDialog(this, "手机号必须是11位数字！", "提示", JOptionPane.WARNING_MESSAGE);
+            CustomDialog.showMessageDialog(this, "手机号必须是11位数字！", "提示", JOptionPane.WARNING_MESSAGE);
             return false;
         }
         
-        // 检查是否全为数字
         if (!phone.matches("\\d{11}")) {
-            JOptionPane.showMessageDialog(this, "手机号只能包含数字！", "提示", JOptionPane.WARNING_MESSAGE);
+            CustomDialog.showMessageDialog(this, "手机号只能包含数字！", "提示", JOptionPane.WARNING_MESSAGE);
             return false;
         }
         
-        // 检查手机号格式（中国手机号规则）
         if (!phone.matches("^1[3-9]\\d{9}$")) {
-            JOptionPane.showMessageDialog(this, "手机号格式不正确！必须以13、14、15、16、17、18、19开头", "提示", JOptionPane.WARNING_MESSAGE);
+            CustomDialog.showMessageDialog(this, "手机号格式不正确！必须以13、14、15、16、17、18、19开头", "提示", JOptionPane.WARNING_MESSAGE);
             return false;
         }
         
-        // 检查是否全相同数字
         if (phone.matches("^(\\d)\\1{10}$")) {
-            JOptionPane.showMessageDialog(this, "手机号不能是全相同数字！", "提示", JOptionPane.WARNING_MESSAGE);
+            CustomDialog.showMessageDialog(this, "手机号不能是全相同数字！", "提示", JOptionPane.WARNING_MESSAGE);
             return false;
         }
         
         return true;
     }
     
-    // 身份证号校验
+    /**
+     * 验证身份证号格式是否正确
+     * 检查身份证号长度、格式、地区码、出生日期和校验位
+     * @param idCard 待验证的身份证号字符串
+     * @return 验证通过返回true，否则返回false
+     */
     private boolean validateIdCard(String idCard) {
         if (idCard == null || idCard.length() != 18) {
-            JOptionPane.showMessageDialog(this, "身份证号必须是18位！", "提示", JOptionPane.WARNING_MESSAGE);
+            CustomDialog.showMessageDialog(this, "身份证号必须是18位！", "提示", JOptionPane.WARNING_MESSAGE);
             return false;
         }
         
-        // 检查格式：前17位数字，第18位数字或X
         if (!idCard.matches("\\d{17}[0-9X]")) {
-            JOptionPane.showMessageDialog(this, "身份证号格式不正确！前17位必须是数字，第18位是数字或X", "提示", JOptionPane.WARNING_MESSAGE);
+            CustomDialog.showMessageDialog(this, "身份证号格式不正确！前17位必须是数字，第18位是数字或X", "提示", JOptionPane.WARNING_MESSAGE);
             return false;
         }
         
-        // 地区码校验（前6位）
         String areaCode = idCard.substring(0, 6);
         if (!isValidAreaCode(areaCode)) {
-            JOptionPane.showMessageDialog(this, "身份证地区码无效！", "提示", JOptionPane.WARNING_MESSAGE);
+            CustomDialog.showMessageDialog(this, "身份证地区码无效！", "提示", JOptionPane.WARNING_MESSAGE);
             return false;
         }
         
-        // 出生日期校验（第7-14位）
         String birthDate = idCard.substring(6, 14);
         if (!isValidBirthDate(birthDate)) {
-            JOptionPane.showMessageDialog(this, "身份证出生日期无效！格式：YYYYMMDD", "提示", JOptionPane.WARNING_MESSAGE);
+            CustomDialog.showMessageDialog(this, "身份证出生日期无效！格式：YYYYMMDD", "提示", JOptionPane.WARNING_MESSAGE);
             return false;
         }
         
-        // 校验位校验
         if (!isValidCheckDigit(idCard)) {
-            JOptionPane.showMessageDialog(this, "身份证校验位无效！", "提示", JOptionPane.WARNING_MESSAGE);
+            CustomDialog.showMessageDialog(this, "身份证校验位无效！", "提示", JOptionPane.WARNING_MESSAGE);
             return false;
         }
         
         return true;
     }
     
-    // 地区码校验
-    private boolean isValidAreaCode(String areaCode) {
-        // 简化的地区码校验，实际应用中应该有完整的地区码表
-        String[] validAreaCodes = {
-            "110000", "110100", "110101", "110102", "110105", "110106", "110107", "110108", "110109", "110111",
-            "120000", "120100", "120101", "120102", "120103", "120104", "120105", "120106", "120110", "120113",
-            "130000", "130100", "130101", "130102", "130104", "130105", "130107", "130121", "130123", "130124",
-            "140000", "140100", "140101", "140105", "140106", "140107", "140108", "140109", "140121", "140122",
-            "150000", "150100", "150101", "150102", "150103", "150104", "150121", "150122", "150123", "150124",
-            "210000", "210100", "210101", "210102", "210103", "210104", "210105", "210106", "210111", "210112",
-            "220000", "220100", "220101", "220102", "220103", "220104", "220105", "220106", "220112", "220113",
-            "230000", "230100", "230101", "230102", "230103", "230104", "230105", "230106", "230107", "230108",
-            "310000", "310100", "310101", "310104", "310105", "310106", "310107", "310109", "310110", "310112",
-            "320000", "320100", "320101", "320102", "320104", "320105", "320106", "320111", "320113", "320114",
-            "330000", "330100", "330101", "330102", "330103", "330104", "330105", "330106", "330108", "330109",
-            "340000", "340100", "340101", "340102", "340103", "340104", "340105", "340106", "340111", "340121",
-            "350000", "350100", "350101", "350102", "350103", "350104", "350105", "350111", "350112", "350113",
-            "360000", "360100", "360101", "360102", "360103", "360104", "360105", "360111", "360121", "360122",
-            "370000", "370100", "370101", "370102", "370103", "370104", "370105", "370112", "370113", "370114",
-            "410000", "410100", "410101", "410102", "410103", "410104", "410105", "410106", "410108", "410122",
-            "420000", "420100", "420101", "420102", "420103", "420104", "420105", "420106", "420107", "420112",
-            "430000", "430100", "430101", "430102", "430103", "430104", "430105", "430111", "430121", "430122",
-            "440000", "440100", "440101", "440103", "440104", "440105", "440106", "440111", "440112", "440113",
-            "450000", "450100", "450101", "450102", "450103", "450104", "450105", "450107", "450108", "450121",
-            "460000", "460100", "460101", "460102", "460103", "460104", "460105", "460106", "460107", "460108",
-            "500000", "500100", "500101", "500102", "500103", "500104", "500105", "500106", "500107", "500108",
-            "510000", "510100", "510101", "510103", "510104", "510105", "510106", "510107", "510108", "510112",
-            "520000", "520100", "520101", "520102", "520103", "520104", "520111", "520112", "520121", "520122",
-            "530000", "530100", "530101", "530102", "530103", "530104", "530111", "530112", "530113", "530114",
-            "540000", "540100", "540101", "540102", "540103", "540104", "540121", "540122", "540123", "540124",
-            "610000", "610100", "610101", "610102", "610103", "610104", "610111", "610112", "610113", "610114",
-            "620000", "620100", "620101", "620102", "620103", "620104", "620105", "620111", "620112", "620113",
-            "630000", "630100", "630101", "630102", "630103", "630104", "630105", "630106", "630107", "630108",
-            "640000", "640100", "640101", "640104", "640105", "640106", "640107", "640121", "640122", "640205",
-            "650000", "650100", "650101", "650102", "650103", "650104", "650105", "650106", "650107", "650108"
-        };
+    /**
+     * 有效的省份代码数组
+     * 包含中国所有省份和直辖市的行政区划代码前两位
+     */
+    private static final String[] VALID_PROVINCE_CODES = {
+        "11", "12", "13", "14", "15", "21", "22", "23", "31", "32", "33", "34", "35", "36", "37", 
+        "41", "42", "43", "44", "45", "46", "50", "51", "52", "53", "54", "61", "62", "63", "64", "65"
+    };
         
-        for (String validCode : validAreaCodes) {
-            if (areaCode.equals(validCode)) {
+    /**
+     * 验证身份证地区码是否有效
+     * 通过检查地区码前两位是否在有效省份代码列表中来验证
+     * @param areaCode 身份证地区码（前6位）
+     * @return 地区码有效返回true，否则返回false
+     */
+    private boolean isValidAreaCode(String areaCode) {
+        if (areaCode == null || areaCode.length() < 2) {
+            return false;
+        }
+        
+        String provinceCode = areaCode.substring(0, 2);
+        for (String validProvince : VALID_PROVINCE_CODES) {
+            if (provinceCode.equals(validProvince)) {
                 return true;
             }
         }
         return false;
     }
     
-    // 出生日期校验
+    /**
+     * 验证身份证出生日期是否有效
+     * 检查日期格式、年份范围、月份范围和日期范围的合法性
+     * @param birthDate 出生日期字符串（格式：YYYYMMDD）
+     * @return 日期有效返回true，否则返回false
+     */
     private boolean isValidBirthDate(String birthDate) {
         if (!birthDate.matches("\\d{8}")) {
             return false;
@@ -244,26 +567,21 @@ public class RegisterFrame extends JFrame {
         int month = Integer.parseInt(birthDate.substring(4, 6));
         int day = Integer.parseInt(birthDate.substring(6, 8));
         
-        // 检查年份范围（1900-当前年份）
         int currentYear = java.time.LocalDate.now().getYear();
         if (year < 1900 || year > currentYear) {
             return false;
         }
         
-        // 检查月份范围
         if (month < 1 || month > 12) {
             return false;
         }
         
-        // 检查日期范围
         if (day < 1 || day > 31) {
             return false;
         }
         
-        // 检查具体月份的天数
         int[] daysInMonth = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
         
-        // 闰年处理
         if (isLeapYear(year)) {
             daysInMonth[1] = 29;
         }
@@ -275,16 +593,25 @@ public class RegisterFrame extends JFrame {
         return true;
     }
     
-    // 闰年判断
+    /**
+     * 判断是否为闰年
+     * 闰年规则：能被4整除但不能被100整除，或能被400整除
+     * @param year 年份
+     * @return 闰年返回true，否则返回false
+     */
     private boolean isLeapYear(int year) {
         return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
     }
     
-    // 身份证校验位校验
+    /**
+     * 验证身份证校验位是否正确
+     * 使用GB 11643-1999标准计算校验位并与身份证最后一位对比
+     * @param idCard 身份证号字符串
+     * @return 校验位正确返回true，否则返回false
+     */
     private boolean isValidCheckDigit(String idCard) {
         char[] chars = idCard.toCharArray();
         int[] weights = {7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2};
-        // 校验位映射表：模0-1, 模1-0, 模2-X, 模3-9, 模4-8, 模5-7, 模6-6, 模7-5, 模8-4, 模9-3, 模10-2
         char[] checkCodes = {'1', '0', 'X', '9', '8', '7', '6', '5', '4', '3', '2'};
         
         int sum = 0;
@@ -297,15 +624,15 @@ public class RegisterFrame extends JFrame {
         char expectedCheckCode = checkCodes[remainder];
         char actualCheckCode = chars[17];
         
-        System.out.println("校验位调试 - 总和: " + sum + ", 余数: " + remainder + 
-                          ", 期望: " + expectedCheckCode + ", 实际: " + actualCheckCode);
-        
         return expectedCheckCode == actualCheckCode;
     }
     
-    // 注册方法
+    /**
+     * 执行用户注册操作
+     * 获取所有输入字段的值，进行校验，调用服务层完成注册
+     * 注册成功后显示成功提示并关闭当前窗口
+     */
     private void register() {
-        // 获取注册信息
         String name = nameField.getText().trim();
         String account = accountField.getText().trim();
         String password = new String(passwordField.getPassword()).trim();
@@ -313,59 +640,44 @@ public class RegisterFrame extends JFrame {
         String phone = phoneField.getText().trim();
         String idCard = idCardField.getText().trim().toUpperCase();
         
-        // 参数校验
         if (name.isEmpty() || account.isEmpty() || password.isEmpty() || 
             confirmPassword.isEmpty() || phone.isEmpty() || idCard.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "所有字段不能为空！", "提示", JOptionPane.WARNING_MESSAGE);
+            CustomDialog.showMessageDialog(this, "所有字段不能为空！", "提示", JOptionPane.WARNING_MESSAGE);
             return;
         }
         
         if (!password.equals(confirmPassword)) {
-            JOptionPane.showMessageDialog(this, "两次输入的密码不一致！", "提示", JOptionPane.WARNING_MESSAGE);
+            CustomDialog.showMessageDialog(this, "两次输入的密码不一致！", "提示", JOptionPane.WARNING_MESSAGE);
             return;
         }
         
-        // 校验手机号
         if (!validatePhone(phone)) {
             return;
         }
         
-        // 校验身份证号
         if (!validateIdCard(idCard)) {
             return;
         }
         
-        // 创建用户对象
-        User user = new User();
-        user.setName(name);
-        user.setAccount(account);
-        user.setPassword(password);
-        user.setPhone(phone);
-        user.setIdCard(idCard);
-        user.setBalance(BigDecimal.ZERO);
-        
         try {
-            // 调用服务层注册方法
+            User user = new User();
+            user.setName(name);
+            user.setAccount(account);
+            user.setPassword(password);
+            user.setPhone(phone);
+            user.setIdCard(idCard);
+            user.setBalance(BigDecimal.ZERO);
+            
             boolean success = userService.register(user);
             
             if (success) {
-                JOptionPane.showMessageDialog(this, "注册成功！", "提示", JOptionPane.INFORMATION_MESSAGE);
-                // 关闭当前窗口
+                CustomDialog.showMessageDialog(this, "注册成功！您的账号是：" + account, "成功", JOptionPane.INFORMATION_MESSAGE);
                 dispose();
-                // 打开登录窗口
-                new LoginFrame();
             } else {
-                // 检查账号是否已存在
-                if (userService.findByAccount(account) != null) {
-                    JOptionPane.showMessageDialog(this, "注册失败！账号已存在。", "提示", JOptionPane.ERROR_MESSAGE);
-                } else {
-                    JOptionPane.showMessageDialog(this, "注册失败！请检查输入信息或数据库连接。", "提示", JOptionPane.ERROR_MESSAGE);
-                }
+                CustomDialog.showMessageDialog(this, "注册失败！账号可能已存在。", "错误", JOptionPane.ERROR_MESSAGE);
             }
-        } catch (Exception e) {
-            // 捕获所有异常，避免界面卡死
-            JOptionPane.showMessageDialog(this, "注册失败！系统异常。\n错误信息：" + e.getMessage(), "提示", JOptionPane.ERROR_MESSAGE);
-            e.printStackTrace();
+        } catch (Exception ex) {
+            CustomDialog.showMessageDialog(this, "注册过程中发生错误：" + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
         }
     }
 }

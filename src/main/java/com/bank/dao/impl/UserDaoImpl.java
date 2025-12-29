@@ -10,10 +10,19 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
- * 用户数据访问实现类，使用JDBC实现具体的数据库操作
+ * 用户数据访问实现类
+ * 使用JDBC实现UserDao接口中定义的数据库操作方法
+ * 负责与MySQL数据库进行交互，执行CRUD操作
  */
 public class UserDaoImpl implements UserDao {
 
+    /**
+     * 用户登录验证
+     * 根据账号和密码查询用户信息
+     * @param account 用户账号
+     * @param password 用户密码
+     * @return User 匹配的用户对象，不存在返回null
+     */
     @Override
     public User login(String account, String password) {
         Connection conn = null;
@@ -51,6 +60,12 @@ public class UserDaoImpl implements UserDao {
         return user;
     }
 
+    /**
+     * 根据账号查询用户信息
+     * 用于验证账号是否存在，在转账等操作前确认目标用户
+     * @param account 用户账号
+     * @return User 找到的用户对象，不存在返回null
+     */
     @Override
     public User findByAccount(String account) {
         Connection conn = null;
@@ -93,6 +108,12 @@ public class UserDaoImpl implements UserDao {
         return user;
     }
 
+    /**
+     * 注册新用户
+     * 将用户信息插入数据库，初始余额为0
+     * @param user 包含注册信息的用户对象
+     * @return boolean 插入成功返回true，失败返回false
+     */
     @Override
     public boolean register(User user) {
         Connection conn = null;
@@ -123,6 +144,13 @@ public class UserDaoImpl implements UserDao {
         }
     }
 
+    /**
+     * 更新用户余额
+     * 通过SQL的加减运算直接更新数据库中的余额
+     * @param account 用户账号
+     * @param amount 金额，正数为存款，负数为取款
+     * @return boolean 更新成功返回true，失败返回false
+     */
     @Override
     public boolean updateBalance(String account, BigDecimal amount) {
         Connection conn = null;
@@ -149,6 +177,15 @@ public class UserDaoImpl implements UserDao {
         }
     }
 
+    /**
+     * 转账操作
+     * 实现两个账户之间的资金转移，使用数据库事务确保原子性
+     * 事务确保：要么转出和转入都成功，要么都失败
+     * @param fromAccount 转出账号
+     * @param toAccount 转入账号
+     * @param amount 转账金额
+     * @return boolean 转账成功返回true，失败返回false
+     */
     @Override
     public boolean transfer(String fromAccount, String toAccount, BigDecimal amount) {
         Connection conn = null;
@@ -161,29 +198,30 @@ public class UserDaoImpl implements UserDao {
                 System.out.println("数据库连接失败，无法执行transfer操作");
                 return false;
             }
-            // 开启事务
+            // 关闭自动提交，开启事务
             conn.setAutoCommit(false);
 
-            // 转出操作
+            // 执行转出操作：减少转出账号余额
             String sql1 = "UPDATE bank_user SET balance = balance - ? WHERE account = ?";
             pstmt1 = conn.prepareStatement(sql1);
             pstmt1.setBigDecimal(1, amount);
             pstmt1.setString(2, fromAccount);
             int rows1 = pstmt1.executeUpdate();
 
-            // 转入操作
+            // 执行转入操作：增加转入账号余额
             String sql2 = "UPDATE bank_user SET balance = balance + ? WHERE account = ?";
             pstmt2 = conn.prepareStatement(sql2);
             pstmt2.setBigDecimal(1, amount);
             pstmt2.setString(2, toAccount);
             int rows2 = pstmt2.executeUpdate();
 
+            // 两笔操作都成功则提交事务，否则回滚
             if (rows1 > 0 && rows2 > 0) {
-                // 提交事务
+                // 提交事务使更改生效
                 conn.commit();
                 return true;
             } else {
-                // 回滚事务
+                // 回滚事务撤销所有更改
                 conn.rollback();
                 return false;
             }
@@ -191,7 +229,7 @@ public class UserDaoImpl implements UserDao {
             e.printStackTrace();
             try {
                 if (conn != null) {
-                    // 回滚事务
+                    // 发生异常时回滚事务
                     conn.rollback();
                 }
             } catch (SQLException ex) {
@@ -201,17 +239,24 @@ public class UserDaoImpl implements UserDao {
         } finally {
             try {
                 if (conn != null) {
-                    // 恢复自动提交
+                    // 恢复自动提交模式
                     conn.setAutoCommit(true);
                 }
             } catch (SQLException e) {
                 e.printStackTrace();
             }
+            // 关闭数据库连接和语句对象
             DBUtil.close(conn, pstmt1);
             DBUtil.close(null, pstmt2);
         }
     }
 
+    /**
+     * 删除用户（注销账户）
+     * 从数据库中永久删除指定用户的所有信息
+     * @param account 要删除的用户账号
+     * @return boolean 删除成功返回true，失败返回false
+     */
     @Override
     public boolean deleteUser(String account) {
         Connection conn = null;
