@@ -2,63 +2,77 @@ package com.bank.dao;
 
 import com.bank.entity.User;
 import java.math.BigDecimal;
-import java.sql.SQLException;
+import java.util.List;
 
 /**
  * 用户数据访问接口
- * 定义用户相关的数据库操作方法规范
- * 采用DAO模式，将业务逻辑与数据访问逻辑分离
+ * 定义用户相关的数据库操作方法
  */
 public interface UserDao {
     /**
      * 用户登录验证
-     * 根据账号和密码从数据库查询匹配的用户记录
-     * @param account 用户账号，11位数字字符串
+     * @param account 用户账号
      * @param password 用户密码
-     * @return User 返回查询到的用户对象，如果不存在返回null
+     * @return 匹配的用户对象，不存在返回null
      */
     User login(String account, String password);
 
     /**
      * 根据账号查询用户信息
-     * 用于验证账号是否存在以及获取用户详情
-     * @param account 用户账号，11位数字字符串
-     * @return User 返回查询到的用户对象，如果不存在返回null
+     * @param account 用户账号
+     * @return 找到的用户对象，不存在返回null
      */
     User findByAccount(String account);
 
     /**
      * 注册新用户
-     * 将用户信息插入到数据库的bank_user表中
-     * @param user 包含用户信息的User对象（账号、姓名、密码、手机号、身份证号、初始余额）
-     * @return boolean 注册成功返回true，失败返回false
+     * @param user 包含注册信息的用户对象
+     * @return 插入成功返回true，失败返回false
      */
     boolean register(User user);
 
     /**
      * 更新用户余额
-     * 根据账号对用户账户进行余额增减操作
      * @param account 用户账号
-     * @param amount 金额，正数为存款，负数为取款
-     * @return boolean 更新成功返回true，失败返回false
+     * @param amount 金额变动，正数为存款，负数为取款
+     * @return 更新成功返回true，失败返回false
      */
     boolean updateBalance(String account, BigDecimal amount);
 
     /**
      * 转账操作
-     * 实现两个账户之间的资金转移，使用事务确保数据一致性
      * @param fromAccount 转出账号
      * @param toAccount 转入账号
-     * @param amount 转账金额，必须大于0
-     * @return boolean 转账成功返回true，失败返回false（包含余额不足、账号不存在等情况）
+     * @param amount 转账金额
+     * @return 转账成功返回true，失败返回false
      */
     boolean transfer(String fromAccount, String toAccount, BigDecimal amount);
 
     /**
-     * 删除用户（注销账户）
-     * 从数据库中删除指定账号的用户记录
-     * @param account 要删除的用户账号
-     * @return boolean 删除成功返回true，失败返回false
+     * 注销用户（软删除，将状态设为0）
+     * @param account 要注销的用户账号
+     * @return 注销成功返回true，失败返回false
      */
     boolean deleteUser(String account);
+
+    /**
+     * 更新用户状态
+     * @param account 用户账号
+     * @param status 状态：1-正常，0-锁定
+     * @return 更新成功返回true，失败返回false
+     */
+    boolean updateStatus(String account, Integer status);
+
+    /**
+     * 查询所有用户
+     * @return 用户列表
+     */
+    List<User> findAll();
+
+    /**
+     * 根据状态查询用户
+     * @param status 用户状态
+     * @return 符合条件的用户列表
+     */
+    List<User> findByStatus(Integer status);
 }
